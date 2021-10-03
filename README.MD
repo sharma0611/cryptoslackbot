@@ -4,6 +4,8 @@ This is a crypto slack bot for checking prices / creating alerts for eth & eth g
 
 A variety of google cloud functions support each slack bot command & configured through the Slack app developer portal.
 
+Link to the product spec: [https://www.notion.so/lazertechnologies/Crypto-Smart-Notifications-Slack-Bot-a4f8d15d825c4c688754349dcd9cccd8](https://www.notion.so/lazertechnologies/Crypto-Smart-Notifications-Slack-Bot-a4f8d15d825c4c688754349dcd9cccd8)
+
 ### Building Slack Apps
 
 Slack App Developer Portal: [https://app.slack.com/](https://app.slack.com/)
@@ -25,7 +27,6 @@ You need the Firebase CLI tool in order to push to production & emulate the func
 ```
 $ npm install -g firebase-tools
 $ firebase login
-
 ```
 
 To get the cloud functions running locally:
@@ -34,20 +35,16 @@ To get the cloud functions running locally:
 $ cd functions
 $ npm run build
 $ firebase emulators:start
-
 ```
 To start an interactive shell where you can test your cloud functions: 
 
 ```
 $ firebase functions:shell
-
 ```
-
 To deploy to production:
 
 ```
 $ firebase deploy --only functions
-
 ```
 But I'd recommend going the PR route instead and having it merged to master where we have Github Actions setup to take it to prod 😁
 
