@@ -1,29 +1,63 @@
 const functions = require("firebase-functions");
-const { getEthGasPrice } = require("./web3/client");
-const { getEthPrice } = require("./web2/exchangeAPI");
-
-const prettyPrint = (label, value, suffix = "", prefix = "") => {
-  return ` - ${label}: ${prefix} ${value
-    .toString()
-    .substring(0, 8)} ${suffix}\n`;
-};
-
-const averageTransactionCostUsd = (ethUsdPrice, gweiGasPrice) => {
-  const averageGasUnits = 120000;
-  return (averageGasUnits * ethUsdPrice * gweiGasPrice) / 10 ** 9;
-};
+const admin = require("firebase-admin");
+admin.initializeApp();
+const { getEthTextUpdate } = require("./modules/updates");
+const {
+  setEthGasAlert,
+  setEthPriceAlert,
+  sendAlerts,
+} = require("./modules/alerts");
 
 exports.ethNow = functions.https.onRequest(async (request, response) => {
   try {
-    const { ethUsdPrice } = await getEthPrice();
-    const { gweiGasPrice } = await getEthGasPrice();
-    const avgUsdGasPrice = averageTransactionCostUsd(ethUsdPrice, gweiGasPrice);
-    const ethUsdStr = prettyPrint("ETH", ethUsdPrice, "USD", "$");
-    const gweiGasStr = prettyPrint("Gas", gweiGasPrice, "gwei");
-    const avgGasStr = prettyPrint("Avg Txn", avgUsdGasPrice, "USD", "$");
-    const text = ethUsdStr + gweiGasStr + avgGasStr;
-    response.send({ text });
+    const ethTextUpdate = await getEthTextUpdate();
+    response.send({ text: ethTextUpdate });
   } catch (e) {
     response.send({ error: e.toString() });
   }
 });
+
+exports.sendAlerts = functions.https.onRequest(async (request, response) => {
+  try {
+    await sendAlerts();
+    response.status(200);
+  } catch (e) {
+    response.send({ error: e.toString() });
+  }
+});
+
+exports.setEthGasAlert = functions.https.onRequest(
+  async (request, response) => {
+    try {
+      const {
+        user_id: userId,
+        user_name: username,
+        text: userEnteredText,
+      } = request.body;
+      const gasThreshold = parseInt(userEnteredText);
+      setEthGasAlert(userId, username, gasThreshold);
+      // response.send({ text: JSON.stringify(request.body) });
+      response.sendStatus(200);
+    } catch (e) {
+      response.send({ error: e.toString() });
+    }
+  }
+);
+
+exports.setEthPriceAlert = functions.https.onRequest(
+  async (request, response) => {
+    try {
+      const {
+        user_id: userId,
+        user_name: username,
+        text: userEnteredText,
+      } = request.body;
+      const priceThreshold = parseInt(userEnteredText);
+      setEthPriceAlert(userId, username, priceThreshold);
+      // response.send({ text: JSON.stringify(request.body) });
+      response.sendStatus(200);
+    } catch (e) {
+      response.send({ error: e.toString() });
+    }
+  }
+);
