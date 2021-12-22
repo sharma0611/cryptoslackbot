@@ -46,7 +46,7 @@ exports.setEthGasAlert = functions.https.onRequest(
       const firstTime = await isFirstTimeUser(userId);
       await setEthGasAlert(userId, username, gasThreshold);
       const responseText = firstTime
-        ? `I'll check every 30 mins if gas is under ${gasThreshold} gwei and let you know.\n\nI won't bother you more than once every 5 hours. (pssst... you can change this with \`\\setAlertInterval\`. See all the commands at \`\\helpcrypto\`.)`
+        ? `I'll check every 30 mins if gas is under ${gasThreshold} gwei and let you know.\n\nI won't bother you more than once every 5 hours. (pssst... see all the commands at \`\\helpcrypto\`.)`
         : `I'll let you know when gas is under ${gasThreshold} gwei`;
       response.send({ text: responseText });
     } catch (e) {
