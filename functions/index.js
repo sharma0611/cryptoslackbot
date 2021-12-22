@@ -9,6 +9,7 @@ const {
   sendAlerts,
   isFirstTimeUser,
   getUserAlerts,
+  DEFAULT_ALERT_INTERVAL_HRS,
 } = require("./modules/alerts");
 
 exports.ethNow = functions.https.onRequest(async (request, response) => {
@@ -42,7 +43,7 @@ exports.setEthGasAlert = functions.https.onRequest(
       const firstTime = await isFirstTimeUser(userId);
       await setEthGasAlert(userId, username, gasThreshold);
       const responseText = firstTime
-        ? `I'll check every 30 mins if gas is under ${gasThreshold} gwei and let you know.\n\nI won't bother you more than once every 10 hours.`
+        ? `I'll check every 30 mins if gas is under ${gasThreshold} gwei and let you know.\n\nI won't bother you more than once every 5 hours. (pssst... you can change this with \`\\setAlertInterval\`. See all the commands at \`\\helpcrypto\`.)`
         : `I'll let you know when gas is under ${gasThreshold} gwei`;
       response.send({ text: responseText });
     } catch (e) {
@@ -63,7 +64,7 @@ exports.setEthPriceAlert = functions.https.onRequest(
       const firstTime = await isFirstTimeUser(userId);
       await setEthPriceAlert(userId, username, priceThreshold);
       const responseText = firstTime
-        ? `I'll check every 30 mins if ETH is under $${priceThreshold} USD and let you know.\n\nI won't bother you more than once every 10 hours.`
+        ? `I'll check every 30 mins if ETH is under $${priceThreshold} USD and let you know.\n\nI won't bother you more than once every ${DEFAULT_ALERT_INTERVAL_HRS} hours.`
         : `I'll let you know when ETH is under $${priceThreshold} USD`;
       response.send({ text: responseText });
     } catch (e) {
@@ -95,6 +96,17 @@ exports.viewAlerts = functions.https.onRequest(async (request, response) => {
     response.send({ error: e.toString() });
   }
 });
+
+exports.helpcrypto = functions.https.onRequest(async (request, response) => {
+  try {
+    let responseText =
+      "Use the following commands:\n`\\ethnow`\n`\\setgasalert`\n`\\setpricealert`\n`\\viewalerts`\n`\\clearalerts`\nUse in any channel. Only you receive the messages.";
+    response.send({ text: responseText });
+  } catch (e) {
+    response.send({ error: e.toString() });
+  }
+});
+a;
 
 exports.scheduledAlerts = functions.pubsub
   .schedule("0,30 0-23 * * *")
