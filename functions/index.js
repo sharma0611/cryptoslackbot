@@ -8,10 +8,11 @@ const {
   setEthPriceAlert,
   sendAlerts,
   isFirstTimeUser,
-  getUserAlerts,
+  getUserThresholds,
   DEFAULT_ALERT_INTERVAL_HRS,
 } = require("./modules/alerts");
 
+// /ethnow
 exports.ethNow = functions.https.onRequest(async (request, response) => {
   try {
     const ethTextUpdate = await getEthTextUpdate();
@@ -21,6 +22,7 @@ exports.ethNow = functions.https.onRequest(async (request, response) => {
   }
 });
 
+// /sendalerts
 exports.sendAlerts = functions.https.onRequest(async (request, response) => {
   try {
     await sendAlerts();
@@ -31,6 +33,7 @@ exports.sendAlerts = functions.https.onRequest(async (request, response) => {
   }
 });
 
+// /setgasalert
 exports.setEthGasAlert = functions.https.onRequest(
   async (request, response) => {
     try {
@@ -52,6 +55,7 @@ exports.setEthGasAlert = functions.https.onRequest(
   }
 );
 
+// /setpricealert
 exports.setEthPriceAlert = functions.https.onRequest(
   async (request, response) => {
     try {
@@ -73,11 +77,12 @@ exports.setEthPriceAlert = functions.https.onRequest(
   }
 );
 
+// /viewalerts
 exports.viewAlerts = functions.https.onRequest(async (request, response) => {
   try {
     const { user_id: userId } = request.body;
-    const alerts = await getUserAlerts(userId);
-    const { gasThreshold, priceThreshold } = alerts;
+    const thresholds = await getUserThresholds(userId);
+    const { gasThreshold, priceThreshold } = thresholds;
     let responseText = "";
     if (gasThreshold) {
       responseText =
@@ -97,6 +102,7 @@ exports.viewAlerts = functions.https.onRequest(async (request, response) => {
   }
 });
 
+// /helpcrypto
 exports.helpcrypto = functions.https.onRequest(async (request, response) => {
   try {
     let responseText =
@@ -106,7 +112,6 @@ exports.helpcrypto = functions.https.onRequest(async (request, response) => {
     response.send({ error: e.toString() });
   }
 });
-a;
 
 exports.scheduledAlerts = functions.pubsub
   .schedule("0,30 0-23 * * *")
