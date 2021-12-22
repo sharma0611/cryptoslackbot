@@ -4,6 +4,7 @@ const { getEthPrice } = require("../integrations/exchangeAPI");
 const { sendSlackMessage } = require("../integrations/slack");
 
 const ALERTS_COLLECTION_ID = "alerts";
+export const DEFAULT_ALERT_INTERVAL_HRS = 5;
 
 const getCollectionRef = (collectionId) =>
   admin.firestore().collection(collectionId);
@@ -20,11 +21,15 @@ const sendAlerts = async () => {
       gasThreshold: minGweiGasPrice,
       userId,
       lastAlertTime,
+      alertInterval: userAlertInterval,
     } = documentSnapshot.data();
     let readyForUpdate = true;
+    let alertInterval = userAlertInterval
+      ? userAlertInterval
+      : DEFAULT_ALERT_INTERVAL_HRS;
     if (lastAlertTime) {
       const nextUpdateTime = lastAlertTime.toDate();
-      nextUpdateTime.setHours(nextUpdateTime.getHours() + 10);
+      nextUpdateTime.setHours(nextUpdateTime.getHours() + alertInterval);
       if (nextUpdateTime > admin.firestore.Timestamp.now().toDate()) {
         readyForUpdate = false;
       }
@@ -66,7 +71,7 @@ const setEthGasAlert = async (userId, username, gasThreshold) => {
   const alertsCollectionRef = getCollectionRef(ALERTS_COLLECTION_ID);
   const userAlertsDocRef = alertsCollectionRef.doc(userId);
   return userAlertsDocRef.set(
-    { userId, username, gasThreshold },
+    { userId, username, gasThreshold, lastAlertTime: undefined },
     { merge: true }
   );
 };
@@ -75,7 +80,7 @@ const setEthPriceAlert = async (userId, username, priceThreshold) => {
   const alertsCollectionRef = getCollectionRef(ALERTS_COLLECTION_ID);
   const userAlertsDocRef = alertsCollectionRef.doc(userId);
   return userAlertsDocRef.set(
-    { userId, username, priceThreshold },
+    { userId, username, priceThreshold, lastAlertTime: undefined },
     { merge: true }
   );
 };
