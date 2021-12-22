@@ -13,9 +13,9 @@ jobs:
       - name: Install Dependencies
         run: cd functions && npm install
       - name: Deploy to Firebase
-        uses: w9jds/firebase-action@master
+        uses: doonstore/firebase-deploy@v1
         with:
-          args: deploy --only functions
+          params: --only functions
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
