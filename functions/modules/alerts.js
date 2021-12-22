@@ -14,6 +14,17 @@ const {
 
 const DEFAULT_ALERT_INTERVAL_HRS = 5;
 
+const isReadyForAlert = (lastAlertTime, alertInterval) => {
+  if (lastAlertTime) {
+    const nextAlertTime = lastAlertTime.toDate();
+    nextAlertTime.setHours(nextAlertTime.getHours() + alertInterval);
+    if (nextAlertTime > serverTimestampNow().toDate()) {
+      return false;
+    }
+  }
+  return true;
+};
+
 const sendAlerts = async () => {
   const { ethUsdPrice } = await getEthPrice();
   const { gweiGasPrice } = await getEthGasPrice();
@@ -22,32 +33,25 @@ const sendAlerts = async () => {
       priceThreshold: minEthUsdPrice,
       gasThreshold: minGweiGasPrice,
       userId,
-      lastAlertTime,
+      lastAlertTimeGas,
+      lastAlertTimePrice,
       alertInterval: userAlertInterval,
     } = alert;
-    let readyForUpdate = true;
     let alertInterval = userAlertInterval
       ? userAlertInterval
       : DEFAULT_ALERT_INTERVAL_HRS;
-    if (lastAlertTime) {
-      const nextUpdateTime = lastAlertTime.toDate();
-      nextUpdateTime.setHours(nextUpdateTime.getHours() + alertInterval);
-      if (nextUpdateTime > serverTimestampNow().toDate()) {
-        readyForUpdate = false;
-      }
-    }
+    let readyForGasAlert = isReadyForAlert(lastAlertTimeGas, alertInterval);
+    let readyForPriceAlert = isReadyForAlert(lastAlertTimePrice, alertInterval);
     let alertText = "";
-    if (readyForUpdate) {
-      if (ethUsdPrice < minEthUsdPrice) {
-        alertText =
-          alertText +
-          `ETH is at $${ethUsdPrice} USD!\nBelow your threshold of ${minEthUsdPrice}\n`;
-      }
-      if (gweiGasPrice < minGweiGasPrice) {
-        alertText =
-          alertText +
-          `Gas is at ${gweiGasPrice} gwei!\nBelow your threshold of ${minGweiGasPrice}\n`;
-      }
+    if (readyForPriceAlert && ethUsdPrice < minEthUsdPrice) {
+      alertText =
+        alertText +
+        `ETH is at $${ethUsdPrice} USD!\nBelow your threshold of ${minEthUsdPrice}\n`;
+    }
+    if (readyForGasAlert && gweiGasPrice < minGweiGasPrice) {
+      alertText =
+        alertText +
+        `Gas is at ${gweiGasPrice} gwei!\nBelow your threshold of ${minGweiGasPrice}\n`;
     }
     return { userId, alertText };
   });
