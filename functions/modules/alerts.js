@@ -1,53 +1,103 @@
 const admin = require("firebase-admin");
 const { getEthGasPrice } = require("../web3/ethClient");
 const { getEthPrice } = require("../web2/exchangeAPI");
+const { sendSlackMessage } = require("../modules/slack");
+
+const ALERTS_COLLECTION_ID = "alerts";
+
+const getCollectionRef = (collectionId) =>
+  admin.firestore().collection(collectionId);
 
 const sendAlerts = async () => {
-  let alertText = "";
   const { ethUsdPrice } = await getEthPrice();
   const { gweiGasPrice } = await getEthGasPrice();
-  const alertsCollectionRef = admin.firestore().collection("alerts");
+  const alertsCollectionRef = getCollectionRef(ALERTS_COLLECTION_ID);
   const querySnapshot = await alertsCollectionRef.get();
+  let updatedAlerts = [];
   querySnapshot.forEach((documentSnapshot) => {
-    let alertText = "";
     const {
       priceThreshold: minEthUsdPrice,
       gasThreshold: minGweiGasPrice,
+      userId,
       lastAlertTime,
     } = documentSnapshot.data();
-    const nextUpdateTime = lastAlertTime.toDate();
-    nextUpdateTime.setHours(nextUpdateTime.getHours() - 10);
-    if (nextUpdateTime < admin.firestore.Timestamp.now().toDate()) {
-      if (minEthUsdPrice && ethUsdPrice < minEthUsdPrice) {
+    let readyForUpdate = true;
+    if (lastAlertTime) {
+      const nextUpdateTime = lastAlertTime.toDate();
+      nextUpdateTime.setHours(nextUpdateTime.getHours() + 10);
+      if (nextUpdateTime > admin.firestore.Timestamp.now().toDate()) {
+        readyForUpdate = false;
+      }
+    }
+    let alertText = "";
+    let updated = false;
+    if (readyForUpdate) {
+      if (ethUsdPrice < minEthUsdPrice) {
         alertText =
           alertText +
-          `ETH Price has dropped below your threshold of ${minEthUsdPrice}\nIt is now at $${ethUsdPrice} USD\n`;
+          `ETH is at $${ethUsdPrice} USD!\nBelow your threshold of ${minEthUsdPrice}\n`;
+        updated = true;
       }
-      if (minGweiGasPrice && minGweiGasPrice < minGweiGasPrice) {
+      if (gweiGasPrice < minGweiGasPrice) {
         alertText =
           alertText +
-          `Gas Price has dropped below your threshold of ${minGweiGasPrice}\nIt is now at ${gweiGasPrice} gwei\n`;
+          `Gas is at ${gweiGasPrice} gwei!\nBelow your threshold of ${minGweiGasPrice}\n`;
+        updated = true;
       }
-      return alertText;
+    }
+    if (updated) {
+      updatedAlerts.push(userId);
+      sendSlackMessage(userId, alertText);
     }
   });
-  return alertText;
+  return Promise.all(
+    updatedAlerts.map((userId) => {
+      alertsCollectionRef
+        .doc(userId)
+        .set(
+          { lastAlertTime: admin.firestore.Timestamp.now() },
+          { merge: true }
+        );
+    })
+  );
 };
 
 const setEthGasAlert = async (userId, username, gasThreshold) => {
-  const alertsCollectionRef = admin.firestore().collection("alerts");
+  const alertsCollectionRef = getCollectionRef(ALERTS_COLLECTION_ID);
   const userAlertsDocRef = alertsCollectionRef.doc(userId);
-  userAlertsDocRef.set({ userId, username, gasThreshold }, { merge: true });
+  return userAlertsDocRef.set(
+    { userId, username, gasThreshold },
+    { merge: true }
+  );
 };
 
 const setEthPriceAlert = async (userId, username, priceThreshold) => {
-  const alertsCollectionRef = admin.firestore().collection("alerts");
+  const alertsCollectionRef = getCollectionRef(ALERTS_COLLECTION_ID);
   const userAlertsDocRef = alertsCollectionRef.doc(userId);
-  userAlertsDocRef.set({ userId, username, priceThreshold }, { merge: true });
+  return userAlertsDocRef.set(
+    { userId, username, priceThreshold },
+    { merge: true }
+  );
+};
+
+const isFirstTimeUser = async (userId) => {
+  const alertsCollectionRef = getCollectionRef(ALERTS_COLLECTION_ID);
+  const userAlertsDocRef = alertsCollectionRef.doc(userId);
+  const userAlertsSnapshot = await userAlertsDocRef.get();
+  return userAlertsSnapshot.exists;
+};
+
+const getUserAlerts = async (userId) => {
+  const alertsCollectionRef = getCollectionRef(ALERTS_COLLECTION_ID);
+  const userAlertsDocRef = alertsCollectionRef.doc(userId);
+  const userAlertsSnapshot = await userAlertsDocRef.get();
+  return userAlertsSnapshot.data();
 };
 
 module.exports = {
   sendAlerts,
   setEthGasAlert,
   setEthPriceAlert,
+  isFirstTimeUser,
+  getUserAlerts,
 };
