@@ -1,5 +1,5 @@
-const { getEthGasPrice } = require("../web3/ethClient");
-const { getEthPrice } = require("../web2/exchangeAPI");
+const { getEthGasPrice } = require("../integrations/ethClient");
+const { getEthPrice } = require("../integrations/exchangeAPI");
 
 const prettyPrint = (label, value, suffix = "", prefix = "") => {
   return ` - ${label}: ${prefix} ${value

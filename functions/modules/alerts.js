@@ -1,7 +1,7 @@
 const admin = require("firebase-admin");
-const { getEthGasPrice } = require("../web3/ethClient");
-const { getEthPrice } = require("../web2/exchangeAPI");
-const { sendSlackMessage } = require("../modules/slack");
+const { getEthGasPrice } = require("../integrations/ethClient");
+const { getEthPrice } = require("../integrations/exchangeAPI");
+const { sendSlackMessage } = require("../integrations/slack");
 
 const ALERTS_COLLECTION_ID = "alerts";
 
