@@ -12,10 +12,16 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install Dependencies
         run: cd functions && npm install
+      - name: Set Environment Variables
+        run: 'echo "SLACK_SIGNING_SECRET=$SLACK_SIGNING_SECRET" >> .env && echo "SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN" >> .env'
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_SIGNING_SECRET: ${{ secrets.SLACK_SIGNING_SECRET }}
       - name: Deploy to Firebase
-        uses: doonstore/firebase-deploy@v1
+        uses: w9jds/firebase-action@master
         with:
-          params: --only functions
+          args: deploy --only functions
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
